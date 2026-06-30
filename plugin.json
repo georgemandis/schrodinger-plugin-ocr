@@ -7,7 +7,6 @@
   "type": "native",
   "entry": {
     "macos-arm64": "lib/libschrodinger_plugin_ocr.dylib",
-    "macos-x86_64": "lib/libschrodinger_plugin_ocr.dylib",
     "linux-x86_64": "lib/libschrodinger_plugin_ocr.so",
     "windows-x86_64": "lib/schrodinger_plugin_ocr.dll"
   },
