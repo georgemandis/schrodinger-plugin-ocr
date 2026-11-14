@@ -42,11 +42,23 @@ jobs:
           # script's OUT_DIR under a non-deterministic hash dir, so glob for it).
           LOUPE=$(find target/${{ matrix.target }}/release/build -path '*loupe-rs-*/out/libloupe.dylib' | head -n1)
           if [ -n "$LOUPE" ]; then
-            cp "$LOUPE" staging/lib/libloupe.dylib
-            # Add an rpath so the plugin's @rpath/libloupe.dylib resolves next to it.
+            # Every plugin loads into the one Schrödinger process, and macOS
+            # matches an already-loaded library by its install name. Under
+            # the shared name "@rpath/libloupe.dylib" this plugin would be
+            # handed whichever copy another plugin (Faces, Image) loaded
+            # first, even an older one missing functions it needs. So this
+            # copy gets its own name. Keep it short: loupe's library has no
+            # spare header space, and a name more than two characters longer
+            # than the original does not fit.
+            LOUPE_NAME=loupe-ocr.dylib
+            cp "$LOUPE" "staging/lib/$LOUPE_NAME"
             # Target the staged plugin dylib directly rather than reconstructing its name.
             PLUGIN_DYLIB=$(find staging/lib -name 'libschrodinger_plugin_*.dylib' | head -n1)
+            install_name_tool -id "@rpath/$LOUPE_NAME" "staging/lib/$LOUPE_NAME"
+            install_name_tool -change @rpath/libloupe.dylib "@rpath/$LOUPE_NAME" "$PLUGIN_DYLIB"
             install_name_tool -add_rpath @loader_path "$PLUGIN_DYLIB"
+            # Editing a library invalidates its signature.
+            codesign --force --sign - "staging/lib/$LOUPE_NAME" "$PLUGIN_DYLIB"
           else
             echo "ERROR: libloupe.dylib not found in build output" >&2
             exit 1
