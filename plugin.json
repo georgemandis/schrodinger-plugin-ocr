@@ -1,8 +1,8 @@
 {
   "id": "ocr",
   "name": "OCR",
-  "version": "0.1.1",
-  "description": "Extract text from images",
+  "version": "0.2.0",
+  "description": "Extract text from images, as plain text or as code with its indentation",
   "author": "georgemandis",
   "type": "native",
   "entry": {
@@ -14,5 +14,16 @@
     "macos",
     "windows"
   ],
-  "config": {}
+  "config": {},
+  "modes": [
+    {
+      "id": "text",
+      "label": "Text",
+      "default": true
+    },
+    {
+      "id": "code",
+      "label": "As code"
+    }
+  ]
 }

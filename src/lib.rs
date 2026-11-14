@@ -1,6 +1,8 @@
 use schrodinger_plugin_sdk::prelude::*;
 use schrodinger_plugin_sdk::schrodinger_plugin;
 
+mod code_layout;
+
 #[derive(Default)]
 pub struct OcrPlugin;
 
@@ -32,7 +34,7 @@ impl NativePlugin for OcrPlugin {
     fn apply(
         &self,
         entry: &ClipEntry,
-        _mode: Option<&str>,
+        mode: Option<&str>,
     ) -> Result<Vec<Output>, PluginError> {
         let image_data = entry.read_image()?;
         let tmp = tempfile::Builder::new()
@@ -45,10 +47,24 @@ impl NativePlugin for OcrPlugin {
         let results = loupe_rs::recognize_text(tmp.path())
             .map_err(|e| PluginError(e))?;
 
-        let text = results.iter()
-            .map(|r| r.text.as_str())
-            .collect::<Vec<_>>()
-            .join("\n");
+        let text = if mode == Some("code") {
+            let lines: Vec<code_layout::Line> = results
+                .iter()
+                .map(|r| code_layout::Line {
+                    text: r.text.clone(),
+                    x: r.x,
+                    y: r.y,
+                    width: r.width,
+                    height: r.height,
+                })
+                .collect();
+            code_layout::rebuild(&lines)
+        } else {
+            results.iter()
+                .map(|r| r.text.as_str())
+                .collect::<Vec<_>>()
+                .join("\n")
+        };
 
         Ok(vec![Output::text(&text)])
     }
