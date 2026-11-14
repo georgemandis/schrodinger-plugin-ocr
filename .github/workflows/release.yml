@@ -40,8 +40,20 @@ jobs:
 
           # Bundle libloupe (the loupe-rs build script emits it into the build
           # script's OUT_DIR under a non-deterministic hash dir, so glob for it).
-          LOUPE=$(find target/${{ matrix.target }}/release/build -path '*loupe-rs-*/out/libloupe.dylib' | head -n1)
-          if [ -n "$LOUPE" ]; then
+          # Asked of cargo, because newer cargo keeps build scripts' output
+          # outside target/.
+          LOUPE_OUT=$(cargo build --release --target ${{ matrix.target }} --message-format=json 2>/dev/null | python3 -c '
+          import json, sys
+          for line in sys.stdin:
+              try:
+                  m = json.loads(line)
+              except ValueError:
+                  continue
+              if m.get("reason") == "build-script-executed" and "loupe-rs" in m.get("package_id", ""):
+                  print(m["out_dir"])
+          ')
+          LOUPE="$LOUPE_OUT/libloupe.dylib"
+          if [ -f "$LOUPE" ]; then
             # Every plugin loads into the one Schrödinger process, and macOS
             # matches an already-loaded library by its install name. Under
             # the shared name "@rpath/libloupe.dylib" this plugin would be
@@ -80,8 +92,13 @@ jobs:
 
           # Bundle loupe.dll next to the plugin DLL (Windows resolves dependent
           # DLLs from the same directory, so no rpath is needed).
-          $loupe = Get-ChildItem -Recurse -Path target/${{ matrix.target }}/release/build -Filter loupe.dll |
-            Where-Object { $_.FullName -like '*loupe-rs-*\out\loupe.dll' } | Select-Object -First 1
+          # Asked of cargo, because newer cargo keeps build scripts' output
+          # outside target/.
+          $outDir = cargo build --release --target ${{ matrix.target }} --message-format=json 2>$null |
+            ForEach-Object { try { $_ | ConvertFrom-Json } catch { } } |
+            Where-Object { $_.reason -eq 'build-script-executed' -and $_.package_id -like '*loupe-rs*' } |
+            Select-Object -First 1 -ExpandProperty out_dir
+          $loupe = if ($outDir) { Get-Item (Join-Path $outDir 'loupe.dll') -ErrorAction SilentlyContinue } else { $null }
           if ($null -eq $loupe) {
             Write-Error "loupe.dll not found in build output"
             exit 1
