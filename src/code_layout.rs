@@ -256,7 +256,7 @@ mod real_image {
     #[ignore]
     fn print_rebuilt_code() {
         let path = std::env::var("OCR_CODE_IMAGE").expect("set OCR_CODE_IMAGE");
-        let results = loupe_rs::recognize_text(std::path::Path::new(&path)).expect("ocr");
+        let results = loupe_rs::recognize_text_with(std::path::Path::new(&path), loupe_rs::OcrOptions { language_correction: false }).expect("ocr");
         for r in results.iter().take(3) {
             eprintln!("box x={:.3} y={:.3} w={:.3} h={:.3} {:?}", r.x, r.y, r.width, r.height, r.text);
         }

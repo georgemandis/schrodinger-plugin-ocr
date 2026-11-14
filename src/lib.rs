@@ -44,10 +44,14 @@ impl NativePlugin for OcrPlugin {
         std::fs::write(tmp.path(), &image_data)
             .map_err(|e| PluginError(format!("write: {}", e)))?;
 
-        let results = loupe_rs::recognize_text(tmp.path())
+        // Code wants the characters exactly as read; prose reads better with
+        // the engine's dictionary correction.
+        let as_code = mode == Some("code");
+        let options = loupe_rs::OcrOptions { language_correction: !as_code };
+        let results = loupe_rs::recognize_text_with(tmp.path(), options)
             .map_err(|e| PluginError(e))?;
 
-        let text = if mode == Some("code") {
+        let text = if as_code {
             let lines: Vec<code_layout::Line> = results
                 .iter()
                 .map(|r| code_layout::Line {
