@@ -167,8 +167,8 @@ checksum = "953f07c43838f8e6f9758cab68bf5bed85465e7587ebe0b823f1bcd81978ad3a"
 
 [[package]]
 name = "loupe-rs"
-version = "0.2.0"
-source = "git+https://github.com/georgemandis/loupe-rs#01b42dd626b1d0e4ffd91af68d836537d552fa1a"
+version = "0.4.0"
+source = "git+https://github.com/georgemandis/loupe-rs#99393a82b034879f79349623afa63c942aba22d7"
 dependencies = [
  "flate2",
  "tar",
